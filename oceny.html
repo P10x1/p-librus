@@ -384,13 +384,16 @@ if (sortuj === 'data') {
   table.classList.add('tabela-klasy');
 
   let html = `<thead><tr>
-    <th>Uczeń</th>
-    <th>Oceny</th>
-    <th>Średnia</th>
-    <th>Półroczna</th>
-    <th>Przewidywana</th>
-    <th>Roczna</th>
-  </tr></thead><tbody>`;
+  <th>Uczeń</th>
+  <th>Oceny</th>
+  <th>Średnia</th>
+  <th>Proponowana</th>
+  <th>(I)</th>
+  <th>(II)</th>
+  <th>(R)</th>
+</tr></thead><tbody>`;
+
+
 
   klasy[wybranaKlasa].forEach(uczen => {
     let ocenyUcznia = zapisane[wybranaKlasa].filter(o => o.uczen === uczen);
@@ -414,6 +417,16 @@ if (sortuj === 'data') {
       .filter(o => !isNaN(parseInt(o.ocena)) && !['Przewidywana', 'Roczna', 'Półroczna'].includes(o.typ))
       .map(o => parseInt(o.ocena));
     const srednia = liczby.length ? (liczby.reduce((a, b) => a + b, 0) / liczby.length).toFixed(2) : '';
+let proponowana = '';
+if (srednia) {
+  const s = parseFloat(srednia);
+  if (s >= 5.70) proponowana = '6';
+  else if (s >= 4.70) proponowana = '5';
+  else if (s >= 3.70) proponowana = '4';
+  else if (s >= 2.70) proponowana = '3';
+  else if (s >= 1.70) proponowana = '2';
+  else proponowana = '1';
+}
 
     const ocenyHTML = ocenyUcznia.map((o, idx) => {
       const klasaTypu = `typ-${o.typ.replace(/\s/g, '')}`;
@@ -425,13 +438,15 @@ if (sortuj === 'data') {
     }).join(' ');
 
     html += `<tr>
-      <td>${uczen}</td>
-      <td>${ocenyHTML}</td>
-      <td>${srednia}</td>
-      <td>${polroczna}</td>
-      <td>${przewidywana}</td>
-      <td>${roczna}</td>
-    </tr>`;
+  <td>${uczen}</td>
+  <td>${ocenyHTML}</td>
+  <td>${srednia}</td>
+  <td>${proponowana}</td>
+  <td>${polroczna}</td>
+  <td>${przewidywana}</td>
+  <td>${roczna}</td>
+</tr>`;
+
   });
 
   html += '</tbody>';

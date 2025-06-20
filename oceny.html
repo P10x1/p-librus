@@ -157,7 +157,7 @@
 .typ-Pracanalekcji    { background-color: #dcedc8; color: black; }
 .typ-Odpowiedźustna   { background-color: #f8bbd0; color: black; }
 .typ-Zadanie          { background-color: #c8e6c9; color: black; }
-.typ-Inne             { background-color: #eeeeee; color: black; }
+.typ-Inne             { background-color: #90caf9; color: black; }
 .typ-Przewidywana     { background-color: #cfd8dc; color: black; }
 .typ-Roczna           { background-color: #b0bec5; color: black; }
 .typ-Poprawa          { background-color: #ffab91; color: black; }
@@ -251,6 +251,15 @@
     <textarea id="komentarz" rows="2" cols="50"></textarea>
     <div class="students" id="students"></div>
     <button onclick="zapiszOceny()">Zapisz ocenę</button>
+	<br>
+	<label for="sortowanie">Sortuj oceny według:</label>
+<select id="sortowanie" onchange="pokazTabele()">
+  <option value="domyślnie">Domyślnie</option>
+  <option value="data">Data</option>
+  <option value="typ">Kategoria</option>
+  <option value="ocena">Wartość oceny</option>
+</select>
+
     <h2>Tabela ocen dla klasy</h2>
     <div id="tabeleKlas"></div>
   </div>
@@ -328,6 +337,21 @@
     function edytujOcene(klasa, uczen, index) {
       const zapisane = JSON.parse(localStorage.getItem('oceny') || '{}');
       const ocenyUcznia = zapisane[klasa].filter(o => o.uczen === uczen);
+	  const sortuj = document.getElementById('sortowanie')?.value || 'domyślnie';
+
+if (sortuj === 'data') {
+  // sortowanie od najnowszej do najstarszej
+  ocenyUcznia.sort((a, b) => new Date(b.data) - new Date(a.data));
+} else if (sortuj === 'typ') {
+  // sortowanie alfabetyczne wg typu (kategorii)
+  ocenyUcznia.sort((a, b) => a.typ.localeCompare(b.typ));
+} else if (sortuj === 'ocena') {
+  // sortowanie malejąco po wartości liczbowej
+  const getVal = x => isNaN(parseInt(x.ocena)) ? 0 : parseInt(x.ocena);
+  ocenyUcznia.sort((a, b) => getVal(b) - getVal(a));
+}
+
+
       const ocenaDoEdycji = ocenyUcznia[index];
       if (!ocenaDoEdycji) return;
 
@@ -350,46 +374,71 @@
     }
 
     function pokazTabele() {
-      const zapisane = JSON.parse(localStorage.getItem('oceny') || '{}');
-      const wybranaKlasa = selectKlasa.value;
-      tabeleKlasDiv.innerHTML = '';
+  const zapisane = JSON.parse(localStorage.getItem('oceny') || '{}');
+  const wybranaKlasa = selectKlasa.value;
+  tabeleKlasDiv.innerHTML = '';
 
-      if (!zapisane[wybranaKlasa]) return;
-      const table = document.createElement('table');
-      table.classList.add('tabela-klasy');
-      let html = `<thead><tr><th>Uczeń</th><th>Oceny</th><th>Średnia</th><td>półroczna</td><th>Przewidywana</th><th>Roczna</th></tr></thead><tbody>`;
+  if (!zapisane[wybranaKlasa]) return;
 
-      klasy[wybranaKlasa].forEach(uczen => {
-        const ocenyUcznia = zapisane[wybranaKlasa].filter(o => o.uczen === uczen);
-        const polroczna = ocenyUcznia.find(o => o.typ === 'Półroczna')?.ocena || '';
-const przewidywana = ocenyUcznia.find(o => o.typ === 'Przewidywana')?.ocena || '';
-const roczna = ocenyUcznia.find(o => o.typ === 'Roczna')?.ocena || '';
+  const table = document.createElement('table');
+  table.classList.add('tabela-klasy');
 
-        const liczby = ocenyUcznia
-  .filter(o => !isNaN(parseInt(o.ocena)) && !['Przewidywana', 'Roczna', 'Półroczna'].includes(o.typ))
-  .map(o => parseInt(o.ocena));
+  let html = `<thead><tr>
+    <th>Uczeń</th>
+    <th>Oceny</th>
+    <th>Średnia</th>
+    <th>Półroczna</th>
+    <th>Przewidywana</th>
+    <th>Roczna</th>
+  </tr></thead><tbody>`;
 
-        const srednia = liczby.length ? (liczby.reduce((a, b) => a + b, 0) / liczby.length).toFixed(2) : '';
-        const ocenyHTML = ocenyUcznia.map((o, idx) => {
-  const klasaTypu = `typ-${o.typ.replace(/\s/g, '')}`;
+  klasy[wybranaKlasa].forEach(uczen => {
+    let ocenyUcznia = zapisane[wybranaKlasa].filter(o => o.uczen === uczen);
 
-  return `
-  <span class="grade ${klasaTypu}" style="cursor:pointer;" onclick="edytujOcene('${wybranaKlasa}', '${uczen}', ${idx})">
-    ${o.ocena}${o.typ.toLowerCase() === 'poprawa' ? '*' : ''}
-    <div class="tooltip">${o.typ}\n${o.komentarz}\n${o.data}</div>
-  </span>`;
-
-}).join(' ');
-
-
-        html += `<tr><td>${uczen}</td><td>${ocenyHTML}</td><td>${srednia}</td><td>${polroczna}</td><td>${przewidywana}</td><td>${roczna}</td></tr>`;
-
-      });
-
-      html += '</tbody>';
-      table.innerHTML = `<caption><strong>Klasa ${wybranaKlasa}</strong></caption>` + html;
-      tabeleKlasDiv.appendChild(table);
+    // 🔽 SORTOWANIE 🔽
+    const sortuj = document.getElementById('sortowanie')?.value || 'domyślnie';
+    if (sortuj === 'data') {
+      ocenyUcznia.sort((a, b) => new Date(b.data.split('.').reverse().join('-')) - new Date(a.data.split('.').reverse().join('-')));
+    } else if (sortuj === 'typ') {
+      ocenyUcznia.sort((a, b) => a.typ.localeCompare(b.typ));
+    } else if (sortuj === 'ocena') {
+      const getVal = x => isNaN(parseInt(x.ocena)) ? 0 : parseInt(x.ocena);
+      ocenyUcznia.sort((a, b) => getVal(b) - getVal(a));
     }
+
+    const polroczna = ocenyUcznia.find(o => o.typ === 'Półroczna')?.ocena || '';
+    const przewidywana = ocenyUcznia.find(o => o.typ === 'Przewidywana')?.ocena || '';
+    const roczna = ocenyUcznia.find(o => o.typ === 'Roczna')?.ocena || '';
+
+    const liczby = ocenyUcznia
+      .filter(o => !isNaN(parseInt(o.ocena)) && !['Przewidywana', 'Roczna', 'Półroczna'].includes(o.typ))
+      .map(o => parseInt(o.ocena));
+    const srednia = liczby.length ? (liczby.reduce((a, b) => a + b, 0) / liczby.length).toFixed(2) : '';
+
+    const ocenyHTML = ocenyUcznia.map((o, idx) => {
+      const klasaTypu = `typ-${o.typ.replace(/\s/g, '')}`;
+      return `
+        <span class="grade ${klasaTypu}" style="cursor:pointer;" onclick="edytujOcene('${wybranaKlasa}', '${uczen}', ${idx})">
+          ${o.ocena}${o.typ.toLowerCase() === 'poprawa' ? '*' : ''}
+          <div class="tooltip">${o.typ}\n${o.komentarz}\n${o.data}</div>
+        </span>`;
+    }).join(' ');
+
+    html += `<tr>
+      <td>${uczen}</td>
+      <td>${ocenyHTML}</td>
+      <td>${srednia}</td>
+      <td>${polroczna}</td>
+      <td>${przewidywana}</td>
+      <td>${roczna}</td>
+    </tr>`;
+  });
+
+  html += '</tbody>';
+  table.innerHTML = `<caption><strong>Klasa ${wybranaKlasa}</strong></caption>` + html;
+  tabeleKlasDiv.appendChild(table);
+}
+
 
     selectKlasa.selectedIndex = 0;
     pokazUczniow();
